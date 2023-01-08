@@ -149,6 +149,7 @@ if (isset($_POST['wg']) || isset($_GET['wg']) || isset($_GET['sg'])) {
     }
 }
 
+$server_list = $GLOBALS['db']->GetAll("SELECT * FROM `" . DB_PREFIX . "_servers`");
 $wgroups = $GLOBALS['db']->GetAll("SELECT gid, name FROM " . DB_PREFIX . "_groups WHERE type != 3");
 $sgroups = $GLOBALS['db']->GetAll("SELECT id, name FROM " . DB_PREFIX . "_srvgroups");
 
@@ -163,6 +164,7 @@ foreach ($sgroups as $sg) {
 $theme->assign('group_admin_name', $userbank->GetProperty("user", $_GET['id']));
 $theme->assign('group_admin_id', $userbank->GetProperty("gid", $_GET['id']));
 $theme->assign('group_lst', $sgroups);
+$theme->assign('server_list', $server_list);
 $theme->assign('web_lst', $wgroups);
 $theme->assign('server_admin_group_id', $server_admin_group);
 
