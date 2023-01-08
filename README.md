@@ -9,6 +9,9 @@
 
 Global admin, ban, and communication management system for the Source engine. Modified for special use for RFG.
 
+### RFG Changes
+- Added server based groups for users
+
 ### Issues
 If you have an issue you can report it [here](https://github.com/sbpp/sourcebans-pp/issues/new).
 To solve your problems as fast as possible fill out the **issue template** provided
