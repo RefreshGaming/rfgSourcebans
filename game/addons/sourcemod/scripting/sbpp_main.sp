@@ -1102,13 +1102,12 @@ public void GotDatabase(Database db, const char[] error, any data)
 						GROUP BY aid, authid, srv_password, srv_group, srv_flags, user",
 				DatabasePrefix, DatabasePrefix, DatabasePrefix, queryLastLogin, DatabasePrefix, ServerIp, ServerPort, DatabasePrefix, DatabasePrefix, ServerIp, ServerPort);
 		} else {
-			FormatEx(query, 1024, "SELECT authid, srv_password, (SELECT name FROM %s_srvgroups WHERE name = srv_group AND flags != '') AS srv_group, srv_flags, user, immunity  \
+			FormatEx(query, 1024, "SELECT authid, srv_password, (SELECT name FROM %s_srvgroups WHERE id = (SELECT group_id FROM %s_admins_servers_groups WHERE admin_id = aid AND server_id = %d) AND flags != '') AS srv_group, srv_flags, user, immunity \
 						FROM %s_admins_servers_groups AS asg \
 						LEFT JOIN %s_admins AS a ON a.aid = asg.admin_id \
 						WHERE %s server_id = %d  \
-						OR srv_group_id = ANY (SELECT group_id FROM %s_servers_groups WHERE server_id = %d) \
 						GROUP BY aid, authid, srv_password, srv_group, srv_flags, user",
-				DatabasePrefix, DatabasePrefix, DatabasePrefix, queryLastLogin, serverID, DatabasePrefix, serverID);
+				DatabasePrefix, DatabasePrefix, serverID, DatabasePrefix, DatabasePrefix, queryLastLogin, serverID);
 		}
 		curLoading++;
 		DB.Query(AdminsDone, query);
