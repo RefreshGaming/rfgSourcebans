@@ -15,7 +15,7 @@
             <div class="margin-bottom:half">
                 <h3>Web Admin Group</h3>
 				<label for="wg" class="form-label form-label:bottom">
-                    SourceBans Group
+                    SourceBans
                 </label>
 
                 <select name="wg" id="wg" class="form-select form-full">
@@ -31,29 +31,29 @@
                 <div id="wgroup.msg" class="message message:error margin-top:half" style="display: none;"></div>
             </div>
 
-            <div class="margin-bottom:half">
-				<h3>Server Admin Groups</h3>
-				{if $server_list}
+			{if $server_list}
+				<div class="margin-bottom:half">
+					<h3>Server Admin Groups</h3>
 					{foreach from=$server_list item="server"}
-							<label id="host_{$server.sid}" for="server_{$server.sid}" class="form-label form-label:bottom">
-								serverName Group
-							</label>
-							<select name="sg" id="server_{$server.sid}" class="form-select form-full">
-								<option value="-1">No Group</option>
+						<label id="host_{$server.sid}" for="server_{$server.sid}" class="form-label form-label:bottom">
+							serverName
+						</label>
+						<select name="sg_{$server.sid}" id="server_{$server.sid}" class="form-select form-full">
+							<option value="-1">No Group</option>
 
-								<optgroup label="Groups" style="font-weight:bold;">
-									{foreach from=$group_lst item=sg}
-										<option value="{$sg.id}" {if $sg.id == $server_admin_group_id} selected="selected" {/if}>
-											{$sg.name}</option>
-									{/foreach}
-								</optgroup>
-							</select>
-							<br>
+							<optgroup label="Groups" style="font-weight:bold;">
+								{foreach from=$group_lst item=sg}
+									<option value="{$sg.id}" {if $sg.id == ${$server.sid}_admin_group_id} selected="selected" {/if}>
+										{$sg.name}</option>
+								{/foreach}
+							</optgroup>
+						</select>
+						<br>
 					{/foreach}
-				{/if}
 
-                <div id="sgroup.msg" class="message message:error margin-top:half" style="display: none;"></div>
-            </div>
+					<div id="sgroup.msg" class="message message:error margin-top:half" style="display: none;"></div>
+				</div>
+			{/if}
 
             <div class="flex flex-ai:center flex-jc:space-between margin-top">
                 {sb_button text="Save Changes" class="button button-success" id="agroups" submit=true}
