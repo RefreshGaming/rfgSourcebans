@@ -58,16 +58,12 @@ if (!$userbank->GetProperty("user", $_GET['id'])) {
 }
 
 // Form sent
-if (isset($_POST['wg']) || isset($_GET['wg']) || isset($_GET['sg'])) {
+if (isset($_POST['wg']) || isset($_GET['wg'])) {
     if (isset($_GET['wg'])) {
         $_POST['wg'] = $_GET['wg'];
     }
-    if (isset($_GET['sg'])) {
-        $_POST['sg'] = $_GET['sg'];
-    }
 
     $_POST['wg'] = (int) $_POST['wg'];
-    $_POST['sg'] = (int) $_POST['sg'];
 
     // Users require a password and email to have web permissions
     $password = $GLOBALS['userbank']->GetProperty('password', $_GET['id']);
@@ -90,39 +86,83 @@ if (isset($_POST['wg']) || isset($_GET['wg']) || isset($_GET['sg'])) {
                 )
             );
         }
+		
+		$exists = true;
+		$counter = 1;
+		
+		while($exists) {
+			$srvgroup = "sg_". $counter;
+			if (!isset($_POST[$srvgroup])) {
+				if($counter == 1) {
+					$counter = 0;
+				}
+				$exists = false;
+			} else {
+				$counter++;
+			}
+		}
+		
+		if($counter != 0) {
+			//Do this for each server.
+			$highestImmunityGroup = NULL;
+			for($serverID = 0; $serverID <= $counter; $serverID++) {
+				$srvgroup = "sg_". $serverID;
+				if (isset($_POST[$srvgroup]) && $_POST[$srvgroup] != "-2") {
+					// Edit the server admin group
+					
+					$group = "";
+					if ($_POST[$srvgroup] != -1) {
+						$grps = $GLOBALS['db']->GetRow("SELECT name, immunity FROM " . DB_PREFIX . "_srvgroups WHERE id = ?;", array(
+							$_POST[$srvgroup]
+						));
+						if ($grps) {
+							$group = $grps['name'];
+							$gImmunity = (int) $grps['immunity'];
+						}
+					}
+					
+					if($highestImmunityGroup == NULL) {
+						$edit = $GLOBALS['db']->Execute(
+							"UPDATE " . DB_PREFIX . "_admins SET
+							`srv_group` = ?
+							WHERE aid = ?",
+							array(
+								$group,
+								$_GET['id']
+							)
+						);
+						$highestImmunityGroup = $group. ",". $gImmunity;
+					} else {
+						$highestImmunityGroup = explode(",", $highestImmunityGroup);
+						
+						if($gImmunity > $highestImmunityGroup[1]) {
+							$edit = $GLOBALS['db']->Execute(
+								"UPDATE " . DB_PREFIX . "_admins SET
+								`srv_group` = ?
+								WHERE aid = ?",
+								array(
+									$group,
+									$_GET['id']
+								)
+							);
+							$highestImmunityGroup = $group. ",". $gImmunity;
+						}
+					}
 
-        if (isset($_POST['sg']) && $_POST['sg'] != "-2") {
-            // Edit the server admin group
-            $group = "";
-            if ($_POST['sg'] != -1) {
-                $grps = $GLOBALS['db']->GetRow("SELECT name FROM " . DB_PREFIX . "_srvgroups WHERE id = ?;", array(
-                    $_POST['sg']
-                ));
-                if ($grps) {
-                    $group = $grps['name'];
-                }
-            }
-
-            $edit = $GLOBALS['db']->Execute(
-                "UPDATE " . DB_PREFIX . "_admins SET
-                `srv_group` = ?
-                WHERE aid = ?",
-                array(
-                    $group,
-                    $_GET['id']
-                )
-            );
-
-            $edit = $GLOBALS['db']->Execute(
-                "UPDATE " . DB_PREFIX . "_admins_servers_groups SET
-                `group_id` = ?
-                WHERE admin_id = ?;",
-                array(
-                    $_POST['sg'],
-                    $_GET['id']
-                )
-            );
-        }
+					$edit = $GLOBALS['db']->Execute(
+						"UPDATE " . DB_PREFIX . "_admins_servers_groups SET
+						`group_id` = ?
+						WHERE admin_id = ? AND server_id = ?;",
+						array(
+							$_POST[$srvgroup],
+							$_GET['id'],
+							$serverID
+						)
+					);
+				}
+			}
+		}
+		
         if (Config::getBool('config.enableadminrehashing')) {
             // rehash the admins on the servers
             $serveraccessq = $GLOBALS['db']->GetAll("SELECT s.sid FROM `" . DB_PREFIX . "_servers` s
@@ -152,13 +192,17 @@ if (isset($_POST['wg']) || isset($_GET['wg']) || isset($_GET['sg'])) {
 $server_list = $GLOBALS['db']->GetAll("SELECT * FROM `" . DB_PREFIX . "_servers`");
 $wgroups = $GLOBALS['db']->GetAll("SELECT gid, name FROM " . DB_PREFIX . "_groups WHERE type != 3");
 $sgroups = $GLOBALS['db']->GetAll("SELECT id, name FROM " . DB_PREFIX . "_srvgroups");
+$asgroups = $GLOBALS['db']->GetAll("SELECT group_id, server_id FROM " . DB_PREFIX . "_admins_servers_groups WHERE admin_id = " . $_GET['id']);
 
-$server_admin_group = $userbank->GetProperty('srv_groups', $_GET['id']);
-foreach ($sgroups as $sg) {
-    if ($sg['name'] == $server_admin_group) {
-        $server_admin_group = (int) $sg['id'];
-        break;
-    }
+$server_admin_group = "";
+foreach ($asgroups as $asg) {
+	foreach ($sgroups as $sg) {
+		if ($sg['id'] == $asg['group_id']) {
+			$server_admin_group_id = $asg['server_id']. "_admin_group_id";
+			$theme->assign($server_admin_group_id, $sg['id']);
+			break;
+		}
+	}
 }
 
 $theme->assign('group_admin_name', $userbank->GetProperty("user", $_GET['id']));
@@ -166,6 +210,5 @@ $theme->assign('group_admin_id', $userbank->GetProperty("gid", $_GET['id']));
 $theme->assign('group_lst', $sgroups);
 $theme->assign('server_list', $server_list);
 $theme->assign('web_lst', $wgroups);
-$theme->assign('server_admin_group_id', $server_admin_group);
 
 $theme->display('page_admin_edit_admins_group.tpl');
